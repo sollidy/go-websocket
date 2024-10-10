@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -20,9 +21,11 @@ var (
 )
 
 func NewPG(ctx context.Context, connString string, log *slog.Logger) (*Postgres, error) {
+	const op = "storage.NewPG"
 	pgOnce.Do(func() {
-		db, dbErr := pgxpool.New(ctx, connString)
-		if dbErr != nil {
+		db, err := pgxpool.New(ctx, "")
+		if err != nil {
+			dbErr = fmt.Errorf("%s: %w", op, err)
 			return
 		}
 		pgInstance = &Postgres{Db: db, log: log}

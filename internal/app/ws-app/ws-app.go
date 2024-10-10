@@ -1,9 +1,8 @@
 package ws
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -15,47 +14,56 @@ var upgrader = websocket.Upgrader{
 }
 
 type AppWs struct {
+	log  *slog.Logger
 	Conn *websocket.Conn
 }
 
-func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
-
-	for {
-		_, p, err := conn.ReadMessage()
+func New(log *slog.Logger) *AppWs {
+	var conn *websocket.Conn
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		conn, err := handleWebSocket(w, r)
 		if err != nil {
-			log.Println(err)
 			return
 		}
-
-		var msg Message
-		if err := json.Unmarshal(p, &msg); err != nil {
-			log.Println(err)
-			continue
-		}
-
-		switch msg.Event {
-		case "event1":
-			handleEvent1(conn)
-		case "event2":
-			handleEvent2(conn)
-		default:
-			message := []byte("Invalid event")
-			if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Println(err)
-				return
-			}
-		}
+		defer conn.Close()
+	})
+	return &AppWs{
+		log:  log,
+		Conn: conn,
 	}
 }
 
-func Run() {
-	http.HandleFunc("/", handleWebSocket)
-	fmt.Println("WebSocket server is running on :5050")
-	log.Fatal(http.ListenAndServe(":5050", nil))
+func (a *AppWs) MustRun() {
+	if err := a.Run(); err != nil {
+		panic(err)
+	}
+}
+
+func (a *AppWs) Run() error {
+	op := "ws.Run"
+	a.log.With((slog.String("op", op))).Info("WebSocket server is running on :5050")
+	return http.ListenAndServe(":5050", nil)
+}
+
+func (a *AppWs) Close() error {
+	if a.Conn != nil {
+		err := a.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		if err != nil {
+			return fmt.Errorf("error sending close message: %v", err)
+		}
+		err = a.Conn.Close()
+		if err != nil {
+			return fmt.Errorf("error closing connection: %v", err)
+		}
+		a.Conn = nil
+	}
+	return nil
+}
+
+func handleWebSocket(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
 }

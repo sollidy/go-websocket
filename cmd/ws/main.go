@@ -20,7 +20,7 @@ type Config struct {
 func main() {
 	cfg := Config{
 		Env:          "local",
-		PgConnString: "connection string",
+		PgConnString: "",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -28,6 +28,7 @@ func main() {
 	log.Debug("starting application", slog.Any("cfg", cfg))
 
 	application := app.New(ctx, log, cfg.PgConnString)
+	go application.Ws.MustRun()
 
 	shutdown(cancel, application, log) // graceful shutdown
 }
