@@ -5,6 +5,7 @@ import (
 	"go-ws/internal/app/ws-app"
 	"go-ws/internal/lib/logger/sl"
 	"go-ws/internal/storage"
+	handler "go-ws/internal/ws"
 	"log/slog"
 )
 
@@ -33,6 +34,6 @@ func New(
 
 	app.Storage = storage
 	app.Ws = ws.New(log)
-
+	handler.Init()
 	return app
 }
