@@ -20,7 +20,7 @@ type Config struct {
 func main() {
 	cfg := Config{
 		Env:          "local",
-		PgConnString: "",
+		PgConnString: "postgres://postgres:postgres@localhost:5432/geo",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -41,6 +41,10 @@ func shutdown(cancel context.CancelFunc, app *app.App, log *slog.Logger) {
 
 	cancel()
 	app.Storage.Close()
+	err := app.Ws.Close()
+	if err != nil {
+		log.Error("failed to close websocket connection", slog.String("error", err.Error()))
+	}
 
 	log.Warn("STOPED application", slog.String("signal", sign.String()))
 }

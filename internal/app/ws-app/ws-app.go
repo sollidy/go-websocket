@@ -40,12 +40,13 @@ func (a *AppWs) MustRun() {
 }
 
 func (a *AppWs) Run() error {
-	op := "ws.Run"
+	const op = "ws.Run"
 	a.log.With((slog.String("op", op))).Info("WebSocket server is running on :5050")
 	return http.ListenAndServe(":5050", nil)
 }
 
 func (a *AppWs) Close() error {
+	const op = "ws.Close"
 	if a.Conn != nil {
 		err := a.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 		if err != nil {
@@ -57,6 +58,7 @@ func (a *AppWs) Close() error {
 		}
 		a.Conn = nil
 	}
+	a.log.With(slog.String("op", op)).Info("DISCONNECTED from websocket server")
 	return nil
 }
 

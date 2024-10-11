@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"go-ws/internal/app/ws-app"
+	"go-ws/internal/lib/logger/sl"
 	"go-ws/internal/storage"
 	"log/slog"
 )
@@ -24,6 +25,12 @@ func New(
 	if err != nil {
 		panic(err)
 	}
+	// ping database
+	err = storage.Ping(ctx)
+	if err != nil {
+		log.Error("failed to connect to database", sl.Err(err))
+	}
+
 	app.Storage = storage
 	app.Ws = ws.New(log)
 

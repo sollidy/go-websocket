@@ -23,7 +23,7 @@ var (
 func NewPG(ctx context.Context, connString string, log *slog.Logger) (*Postgres, error) {
 	const op = "storage.NewPG"
 	pgOnce.Do(func() {
-		db, err := pgxpool.New(ctx, "")
+		db, err := pgxpool.New(ctx, connString)
 		if err != nil {
 			dbErr = fmt.Errorf("%s: %w", op, err)
 			return
