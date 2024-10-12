@@ -2,16 +2,17 @@ package app
 
 import (
 	"context"
-	"go-ws/internal/app/ws-app"
+	"go-ws/internal/app/ws-server"
 	"go-ws/internal/lib/logger/sl"
 	"go-ws/internal/storage"
-	handler "go-ws/internal/ws"
 	"log/slog"
+
+	"github.com/gorilla/websocket"
 )
 
 type App struct {
 	Storage *storage.Postgres
-	Ws      *ws.AppWs
+	Ws      *ws.Server
 }
 
 func New(
@@ -33,7 +34,10 @@ func New(
 	}
 
 	app.Storage = storage
-	app.Ws = ws.New(log)
-	handler.Init()
+	app.Ws = ws.StartServer(messageHandler, log)
 	return app
+}
+
+func messageHandler(message []byte, connection *websocket.Conn) {
+	connection.WriteMessage(websocket.TextMessage, message)
 }

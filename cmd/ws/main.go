@@ -28,7 +28,6 @@ func main() {
 	log.Debug("starting application", slog.Any("cfg", cfg))
 
 	application := app.New(ctx, log, cfg.PgConnString)
-	go application.Ws.MustRun()
 
 	shutdown(cancel, application, log) // graceful shutdown
 }
