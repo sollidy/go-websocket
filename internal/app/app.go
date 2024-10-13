@@ -5,14 +5,14 @@ import (
 	"go-ws/internal/app/ws-server"
 	"go-ws/internal/lib/logger/sl"
 	"go-ws/internal/storage"
+	"go-ws/internal/ws/handler"
 	"log/slog"
-
-	"github.com/gorilla/websocket"
 )
 
 type App struct {
-	Storage *storage.Postgres
-	Ws      *ws.Server
+	Storage    *storage.Postgres
+	Ws         *ws.Server
+	ws_handler *handler.MessageHandler
 }
 
 func New(
@@ -34,10 +34,7 @@ func New(
 	}
 
 	app.Storage = storage
-	app.Ws = ws.StartServer(messageHandler, log)
+	app.ws_handler = handler.New(log)
+	app.Ws = ws.StartServer(app.ws_handler.Handle, log)
 	return app
-}
-
-func messageHandler(message []byte, connection *websocket.Conn) {
-	connection.WriteMessage(websocket.TextMessage, message)
 }
