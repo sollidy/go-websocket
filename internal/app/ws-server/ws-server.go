@@ -28,8 +28,14 @@ func StartServer(handleMessage func(message []byte, connection *websocket.Conn),
 	}
 
 	http.HandleFunc("/", server.echo)
-	go http.ListenAndServe(":5050", nil) // Уводим http сервер в горутину
-	log.With((slog.String("op", op))).Info("WebSocket server is running on :5050")
+	go func() {
+		err := http.ListenAndServe(":5050", nil)
+		if err != nil {
+			log.With(slog.String("op", op)).Error("Failed to start WebSocket server", "error", err)
+			return
+		}
+	}()
+	log.With(slog.String("op", op)).Info("WebSocket server is running on :5050")
 
 	return &server
 }
@@ -54,6 +60,8 @@ func (server *Server) echo(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) WriteMessage(message []byte) {
 	for conn := range server.clients {
-		conn.WriteMessage(websocket.TextMessage, message)
+		if err := conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			server.log.Error("Failed to write message", "error", err)
+		}
 	}
 }

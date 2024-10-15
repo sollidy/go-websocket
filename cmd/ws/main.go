@@ -20,7 +20,7 @@ type Config struct {
 func main() {
 	cfg := Config{
 		Env:          "local",
-		PgConnString: "postgres://postgres:postgres@localhost:5432/geo",
+		PgConnString: os.Getenv("DB_URL"),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

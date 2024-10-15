@@ -5,14 +5,16 @@ import (
 	"go-ws/internal/app/ws-server"
 	"go-ws/internal/lib/logger/sl"
 	"go-ws/internal/storage"
+	"go-ws/internal/storage/repository"
 	"go-ws/internal/ws/handler"
 	"log/slog"
 )
 
 type App struct {
-	Storage    *storage.Postgres
-	Ws         *ws.Server
-	ws_handler *handler.MessageHandler
+	Storage             *storage.Postgres
+	Ws                  *ws.Server
+	wsHandler           *handler.MessageHandler
+	superheroRepository *repository.SuperheroRepository
 }
 
 func New(
@@ -34,7 +36,8 @@ func New(
 	}
 
 	app.Storage = storage
-	app.ws_handler = handler.New(log)
-	app.Ws = ws.StartServer(app.ws_handler.Handle, log)
+	app.superheroRepository = repository.NewSuperheroRepository(storage.Db, ctx)
+	app.wsHandler = handler.New(log, app.superheroRepository)
+	app.Ws = ws.StartServer(app.wsHandler.Handle, log)
 	return app
 }

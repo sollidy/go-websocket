@@ -1,0 +1,29 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: ['.env']
+
+tasks:
+  up: go run cmd/ws/main.go
+
+  db-migrate:
+    desc: Migrate database
+    cmd: go run cmd/migrate/main.go
+
+  # prepare-test-data:
+  #   desc: 'Prepare test data: add test App with app_id: 1'
+  #   cmd: go run cmd/migrate-data/main.go
+
+  # test:
+  #   desc: Run tests
+  #   cmd: go test -v ./tests
+
+  # clean-cache-tests:
+  #   aliases: [clean]
+  #   desc: Clean test cache
+  #   cmd: go clean -testcache
+
+  lint:
+    desc: Lint code
+    cmd: golangci-lint run
