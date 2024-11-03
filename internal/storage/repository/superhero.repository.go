@@ -35,3 +35,32 @@ func (r *SuperheroRepository) FindById(id int) (*models.Superhero, error) {
 	}
 	return &superhero, nil
 }
+
+func (r *SuperheroRepository) FindByIdWithDetailed(id int) (*models.SuperheroWithDetails, error) {
+	query := `
+		SELECT s.id, s.superhero_name, s.full_name, 
+			g.gender, e.colour as eye_colour, h.colour as hair_colour,
+			sk.colour as skin_colour, r.race, p.publisher_name, a.alignment,
+			s.height_cm, s.weight_kg
+		FROM superhero.superhero s
+		LEFT JOIN superhero.gender g ON s.gender_id = g.id
+		LEFT JOIN superhero.colour e ON s.eye_colour_id = e.id
+		LEFT JOIN superhero.colour h ON s.hair_colour_id = h.id
+		LEFT JOIN superhero.colour sk ON s.skin_colour_id = sk.id
+		LEFT JOIN superhero.race r ON s.race_id = r.id
+		LEFT JOIN superhero.publisher p ON s.publisher_id = p.id
+		LEFT JOIN superhero.alignment a ON s.alignment_id = a.id
+		WHERE s.id = $1
+	`
+	var superhero models.SuperheroWithDetails
+	err := r.db.QueryRow(r.ctx, query, id).Scan(
+		&superhero.ID, &superhero.SuperheroName, &superhero.FullName,
+		&superhero.Gender, &superhero.EyeColour, &superhero.HairColour,
+		&superhero.SkinColour, &superhero.Race, &superhero.Publisher,
+		&superhero.Alignment, &superhero.HeightCm, &superhero.WeightKg,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &superhero, nil
+}

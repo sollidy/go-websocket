@@ -28,15 +28,23 @@ func New(log *slog.Logger, superheroRepository *repository.SuperheroRepository) 
 }
 
 func (m *MessageHandler) Handle(message []byte, conn *websocket.Conn) {
-
+	const op = "handler.Handle"
 	var msg messageType
 	if err := json.Unmarshal(message, &msg); err != nil {
+		err := fmt.Errorf("%s: failed to unmarshal message, is message valid JSON?", op)
 		m.catchError(conn, err, msg.Key)
 		return
 	}
 	switch msg.Event {
-	case "event1":
+	case "get-by-id":
 		result, err := m.getSuperheroesById(msg)
+		if err != nil {
+			m.catchError(conn, err, msg.Key)
+			return
+		}
+		m.sendResult(conn, result)
+	case "get-by-id-details":
+		result, err := m.getSuperheroByIdWithDetails(msg)
 		if err != nil {
 			m.catchError(conn, err, msg.Key)
 			return
@@ -64,6 +72,38 @@ func (m *MessageHandler) getSuperheroesById(msg messageType) ([]byte, error) {
 	superhero, err := m.superheroRepository.FindById(id)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to find superhero by ID: %w", op, err)
+	}
+
+	data := map[string]interface{}{
+		"key":     msg.Key,
+		"message": map[string]interface{}{"superhero": superhero},
+		"error":   nil,
+	}
+
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to marshal JSON: %w", op, err)
+	}
+	return jsonData, nil
+}
+
+func (m *MessageHandler) getSuperheroByIdWithDetails(msg messageType) ([]byte, error) {
+	const op = "handler.getSuperheroByIdWithDetails"
+
+	payload, ok := msg.Payload.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("%s: invalid payload format", op)
+	}
+
+	idInterface, ok := payload["id"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("%s: id is missing or not a number", op)
+	}
+	id := int(idInterface)
+
+	superhero, err := m.superheroRepository.FindByIdWithDetailed(id)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to find superhero with details by ID: %w", op, err)
 	}
 
 	data := map[string]interface{}{
