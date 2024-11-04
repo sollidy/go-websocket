@@ -35,39 +35,33 @@ func (m *MessageHandler) Handle(message []byte, conn *websocket.Conn) {
 		m.catchError(conn, err, msg.Key)
 		return
 	}
+
+	var result []byte
+	var err error
+
 	switch msg.Event {
 	case "get-by-id":
-		result, err := m.getSuperheroesById(msg)
-		if err != nil {
-			m.catchError(conn, err, msg.Key)
-			return
-		}
-		m.sendResult(conn, result)
+		result, err = m.getSuperheroesById(msg)
 	case "get-by-id-details":
-		result, err := m.getSuperheroByIdWithDetails(msg)
-		if err != nil {
-			m.catchError(conn, err, msg.Key)
-			return
-		}
-		m.sendResult(conn, result)
+		result, err = m.getSuperheroByIdWithDetails(msg)
 	default:
-		m.catchError(conn, fmt.Errorf("unknown event: %s", msg.Event), msg.Key)
+		err = fmt.Errorf("unknown event: %s", msg.Event)
 	}
+
+	if err != nil {
+		m.catchError(conn, err, msg.Key)
+		return
+	}
+	m.sendResult(conn, result)
 }
 
 func (m *MessageHandler) getSuperheroesById(msg messageType) ([]byte, error) {
 	const op = "handler.getSuperheroesById"
 
-	payload, ok := msg.Payload.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("%s: invalid payload format", op)
+	id, err := m.extractIdFromMessage(msg)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to extract ID from message: %w", op, err)
 	}
-
-	idInterface, ok := payload["id"].(float64)
-	if !ok {
-		return nil, fmt.Errorf("%s: id is missing or not a number", op)
-	}
-	id := int(idInterface)
 
 	superhero, err := m.superheroRepository.FindById(id)
 	if err != nil {
@@ -90,16 +84,10 @@ func (m *MessageHandler) getSuperheroesById(msg messageType) ([]byte, error) {
 func (m *MessageHandler) getSuperheroByIdWithDetails(msg messageType) ([]byte, error) {
 	const op = "handler.getSuperheroByIdWithDetails"
 
-	payload, ok := msg.Payload.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("%s: invalid payload format", op)
+	id, err := m.extractIdFromMessage(msg)
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to extract ID from message: %w", op, err)
 	}
-
-	idInterface, ok := payload["id"].(float64)
-	if !ok {
-		return nil, fmt.Errorf("%s: id is missing or not a number", op)
-	}
-	id := int(idInterface)
 
 	superhero, err := m.superheroRepository.FindByIdWithDetailed(id)
 	if err != nil {
@@ -141,4 +129,18 @@ func (m *MessageHandler) catchError(conn *websocket.Conn, err error, key string)
 	if err := conn.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 		m.log.With(slog.String("op", op)).Error("Failed to write message", sl.Err(err))
 	}
+}
+
+func (m *MessageHandler) extractIdFromMessage(msg messageType) (int, error) {
+	const op = "handler.extractIdFromMessage"
+	payload, ok := msg.Payload.(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("%s: invalid payload format", op)
+	}
+	idInterface, ok := payload["id"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("%s: id is missing or not a number", op)
+	}
+	id := int(idInterface)
+	return id, nil
 }
