@@ -27,3 +27,7 @@ tasks:
   lint:
     desc: Lint code
     cmd: golangci-lint run
+
+  modernize:
+    desc: Modernize code
+    cmd: go run golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest -fix ./...

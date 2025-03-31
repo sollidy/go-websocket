@@ -42,8 +42,11 @@ func StartServer(handleMessage func(message []byte, connection *websocket.Conn),
 
 func (server *Server) echo(w http.ResponseWriter, r *http.Request) {
 	connection, _ := upgrader.Upgrade(w, r, nil)
-	defer connection.Close()
-
+	defer func() {
+		if err := connection.Close(); err != nil {
+			server.log.Error("Failed to close WS connection", "error", err)
+		}
+	}()
 	server.clients[connection] = true        // Сохраняем соединение, используя его как ключ
 	defer delete(server.clients, connection) // Удаляем соединение
 

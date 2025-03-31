@@ -15,9 +15,9 @@ type MessageHandler struct {
 	superheroRepository *repository.SuperheroRepository
 }
 type messageType struct {
-	Event   string      `json:"event"`
-	Key     string      `json:"key"`
-	Payload interface{} `json:"payload"`
+	Event   string `json:"event"`
+	Key     string `json:"key"`
+	Payload any    `json:"payload"`
 }
 
 func New(log *slog.Logger, superheroRepository *repository.SuperheroRepository) *MessageHandler {
@@ -68,9 +68,9 @@ func (m *MessageHandler) getSuperheroesById(msg messageType) ([]byte, error) {
 		return nil, fmt.Errorf("%s: failed to find superhero by ID: %w", op, err)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"key":     msg.Key,
-		"message": map[string]interface{}{"superhero": superhero},
+		"message": map[string]any{"superhero": superhero},
 		"error":   nil,
 	}
 
@@ -94,9 +94,9 @@ func (m *MessageHandler) getSuperheroByIdWithDetails(msg messageType) ([]byte, e
 		return nil, fmt.Errorf("%s: failed to find superhero with details by ID: %w", op, err)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"key":     msg.Key,
-		"message": map[string]interface{}{"superhero": superhero},
+		"message": map[string]any{"superhero": superhero},
 		"error":   nil,
 	}
 
@@ -116,7 +116,7 @@ func (m *MessageHandler) sendResult(conn *websocket.Conn, result []byte) {
 
 func (m *MessageHandler) catchError(conn *websocket.Conn, err error, key string) {
 	const op = "handler.catchError"
-	data := map[string]interface{}{
+	data := map[string]any{
 		"key":     key,
 		"message": nil,
 		"error":   err.Error(),
@@ -133,7 +133,7 @@ func (m *MessageHandler) catchError(conn *websocket.Conn, err error, key string)
 
 func (m *MessageHandler) extractIdFromMessage(msg messageType) (int, error) {
 	const op = "handler.extractIdFromMessage"
-	payload, ok := msg.Payload.(map[string]interface{})
+	payload, ok := msg.Payload.(map[string]any)
 	if !ok {
 		return 0, fmt.Errorf("%s: invalid payload format", op)
 	}

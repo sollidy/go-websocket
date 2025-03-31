@@ -25,7 +25,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Println("Error closing WS connection:", err)
+		}
+	}()
 
 	for {
 		_, p, err := conn.ReadMessage()
